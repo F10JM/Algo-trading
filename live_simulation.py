@@ -31,8 +31,10 @@ def format_data_for_chart(bar):
     return formatted_data
 
 async def handle_realtime_data(data):
-    if (datetime.now()-current_time > timedelta(minutes=15)):
+    if (datetime.now()-current_time > timedelta(minutes=14)):
         chart.update(format_data_for_chart(data))
+    else:
+        last_bars.append(data)
     print(f"Real-time data: {format_data_for_chart(data)}")
 
 def start_stream():
@@ -56,6 +58,7 @@ def wait_until_next_minute():
 
 
 if __name__ == '__main__':
+    last_bars=[]
     current_time = wait_until_next_minute()
     api = tradeapi.REST(APCA_API_KEY_ID, APCA_API_SECRET_KEY, base_url=APCA_API_BASE_URL)
     # Fetch historical data
@@ -65,7 +68,7 @@ if __name__ == '__main__':
 
     stream_thread = threading.Thread(target=start_stream)
     stream_thread.start()
-    sleep(60*15)
+    sleep(60*14)
     bars = api.get_bars(ticker, timeframe, start=start_date).df
 
     # Prepare data for lightweight_charts
@@ -80,15 +83,14 @@ if __name__ == '__main__':
         'volume': 'volume'
     }, inplace=True)
     bars.columns = bars.columns.str.lower()
+    print(bars.tail())
     # Initialize Chart
     chart = Chart()
     chart.set(bars) 
     chart.watermark(ticker)
     chart.show(block=False)  # Non-blocking show
-
-
-    
-
+    for data in last_bars:  
+        chart.update(format_data_for_chart(data))
     # Simulate real-time updates
     #for index, row in bars.iloc[30:].iterrows():
     #    sleep()  # Delay to simulate real-time (1 second)
